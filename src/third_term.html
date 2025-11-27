@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Third Term | Continuous Probability Distributions</title>
+  <title>Third Term | Applied Inference & Portfolios</title>
   <style>
     body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; background: #f8fafc; color: #0f172a; }
     header { background: #6d28d9; color: #fff; padding: 26px 20px; }
@@ -15,80 +15,62 @@
     ul { margin: 10px 0 0 20px; }
     .example { background: #f3e8ff; padding: 12px; border-radius: 10px; border: 1px solid #e9d5ff; }
     .support-section h2 { display: flex; align-items: center; gap: 8px; }
-    .support-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; padding: 0; margin: 10px 0 0; list-style: none; }
-    .resource-card { border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px; background: linear-gradient(135deg, #f8fbff, #f5f3ff); box-shadow: 0 8px 20px rgba(0,0,0,0.06); }
-    .resource-card h3 { margin: 0 0 6px; color: #6d28d9; font-size: 1.05rem; }
-    .resource-card p { margin: 0; color: #334155; }
-    .resource-card a { color: #7c3aed; text-decoration: none; font-weight: 600; }
-    .resource-card a:hover { text-decoration: underline; }
     .empty-support { margin: 6px 0 0; color: #475569; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 10px; padding: 10px 12px; }
   </style>
 </head>
 <body>
   <header>
     <a href="../index.html">&larr; Back to main</a>
-    <h1>Continuous Probability Distributions</h1>
-    <p>Density-based models for continuous variables, risk, and portfolio evaluation with normal and related distributions.</p>
+    <h1>Applied Inference & Portfolio Analysis</h1>
+    <p>Extend interval estimation concepts to economic and financial scenarios, with emphasis on portfolio characteristics.</p>
   </header>
 
   <main>
     <section>
       <h2>Conceptual Referents</h2>
       <ul>
-        <li>Area of simple geometric figures</li>
+        <li>Area of simple geometric figures.</li>
+        <li>Sample and population</li>
         <li>Random variable</li>
         <li>Continuous probability distribution</li>
-        <li>Mean and variance</li>
+        <li>Mean and variance.</li>
         <li>Normal distribution</li>
-        <li>Exponential distribution</li>
         <li>t-student distribution</li>
         <li>Investment portfolios</li>
-        <li>Risk</li>
       </ul>
     </section>
 
     <section>
-      <h2>Achievement Criteria</h2>
+      <h2>Assessment Criteria</h2>
       <ol>
-        <li>Describes probabilities in continuous variables as a density function.</li>
-        <li>Explains how a uniform random variable works.</li>
-        <li>Expresses how to work with distributions that have a linear behaviour.</li>
-        <li>Interprets the concept of variance and standard deviation of a probability function.</li>
-        <li>Uses the normal standard distribution and its tables to calculate probabilities in context situations.</li>
-        <li>Employs the standardisation of the normal variable in real life problems.</li>
-        <li>Solves problems through the concept of inverse normal distribution.</li>
-        <li>Summarizes the elements and characteristics that an investment portfolio may have.</li>
-        <li>Establishes that the risk of a portfolio is determined by its probability distribution.</li>
-        <li>Evaluates finance context situations with normal distribution and other continuous random variables.</li>
+        <li>Recognizes the concept of mean and standard deviation in a sample as well as in a population.</li>
+        <li>Distinguishes between statistic of a population and estimating the statistic.</li>
+        <li>Explains the difference between point estimation Vs. interval estimation for a statistic in a population.</li>
+        <li>Interprets the concept of an interval of confidence in real life applications of economy and finance.</li>
+        <li>Calculates the confidence interval for the mean when the variance is known.</li>
+        <li>Stablishes the sample size so the error will not exceed a specified amount.</li>
+        <li>Constructs the confidence interval for a proportion.</li>
+        <li>Calculates confidence intervals applying t-student distribution in context situations.</li>
+        <li>Estimates the confidence interval for the mean when the variance is unknown in context situations.</li>
+        <li>Concludes about a statistical parameter in situations in finance and economy.</li>
       </ol>
     </section>
 
     <section>
-      <h2>Key Concepts</h2>
+      <h2>Inference in Context</h2>
       <ul>
-        <li><strong>PDF (f(x)):</strong> Probability density; total area under curve is 1.</li>
-        <li><strong>CDF (F(x)):</strong> Probability X ≤ x, found by integrating the PDF.</li>
-        <li><strong>Expected value:</strong> E[X] = ∫ x·f(x) dx; <strong>Variance:</strong> Var(X) = ∫ (x−μ)^2 f(x) dx.</li>
+        <li><strong>Confidence statements:</strong> Frame findings in economic language (e.g., "We are 95% confident the average return lies between...").</li>
+        <li><strong>Normal vs. t-student:</strong> Choose based on whether variance is known and sample size.</li>
+        <li><strong>Proportion focus:</strong> Useful for adoption rates, default rates, or market share analyses.</li>
       </ul>
     </section>
 
     <section>
-      <h2>Common Distributions</h2>
-      <ul>
-        <li><strong>Normal(μ, σ²):</strong> Bell-shaped; standardize with Z = (X−μ)/σ for table lookup.</li>
-        <li><strong>Exponential(λ):</strong> Time between Poisson events; PDF λe^{−λx} for x ≥ 0; memoryless.</li>
-        <li><strong>Uniform(a, b):</strong> Constant density 1/(b−a) on [a, b]; mean (a+b)/2.</li>
-      </ul>
-    </section>
-
-    <section>
-      <h2>Example Calculations</h2>
+      <h2>Portfolio Applications</h2>
       <div class="example">
-        <strong>Normal tail:</strong> If X ~ Normal(50, 9), then Z = (55−50)/3 ≈ 1.67. Using a Z-table, P(X ≥ 55) ≈ 0.0475.
+        <strong>Example:</strong> Estimating the mean return of a portfolio with unknown variance uses t critical values; the resulting interval guides whether to rebalance toward safer assets.
       </div>
-      <div class="example" style="margin-top:10px;">
-        <strong>Exponential probability:</strong> If service times are Exponential(λ=0.5), then P(X ≤ 2) = 1 − e^{−0.5·2} ≈ 0.632.
-      </div>
+      <p>Interpret intervals alongside risk measures to decide if expected performance meets economic objectives.</p>
     </section>
 
     <section class="support-section">
