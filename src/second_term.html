@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Second Term | Analysis of Decisions</title>
+  <title>Second Term | Confidence & Interval Estimation</title>
   <style>
     body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; background: #f8fafc; color: #0f172a; }
     header { background: #0f766e; color: #fff; padding: 26px 20px; }
@@ -26,77 +26,63 @@
 <body>
   <header>
     <a href="../index.html">&larr; Back to main</a>
-    <h1>Analysis of Decisions</h1>
-    <p>Decision-making frameworks with and without probabilities, emphasizing expected value and portfolio thinking.</p>
+    <h1>Confidence & Interval Estimation</h1>
+    <p>Inferential tools for samples and populations using normal and t-student approaches in Global Economics.</p>
   </header>
 
   <main>
     <section>
       <h2>Conceptual Referents</h2>
       <ul>
+        <li>Area of simple geometric figures.</li>
+        <li>Sample and population</li>
         <li>Random variable</li>
-        <li>Probability distributions</li>
-        <li>Subjective probability</li>
-        <li>Mean and variance of discrete distributions</li>
-        <li>Investment portfolio</li>
-        <li>Expected value</li>
+        <li>Continuous probability distribution</li>
+        <li>Mean and variance.</li>
+        <li>Normal distribution</li>
+        <li>t-student distribution</li>
+        <li>Investment portfolios</li>
       </ul>
     </section>
 
     <section>
-      <h2>Achievement Criteria</h2>
+      <h2>Assessment Criteria</h2>
       <ol>
-        <li>Describes the way a problem can be formulated for optimal decision making.</li>
-        <li>Interprets the parts of a problem such as decision alternatives, fortuitous events, consequences, and states of nature.</li>
-        <li>Builds a payoff table from a description of the problem.</li>
-        <li>Explains how a decision-making problem without probabilities works (criterion maximax).</li>
-        <li>Summarizes how a decision-making problem without probabilities works (criterion maximin).</li>
-        <li>Develops decision-making strategies to address problems with probabilities and maximum opportunity criterion.</li>
-        <li>Uses probabilities and expected value to work on a decision-making problem.</li>
-        <li>Compares the Bayes decision rule for decision making without experimentation and the Bayes, maximin and minimax methods.</li>
-        <li>Establishes the tree diagram for a decision-making problem.</li>
-        <li>Evaluates all possibilities in a decision-making problem using the different strategies presented so far.</li>
+        <li>Recognizes the concept of mean and standard deviation in a sample as well as in a population.</li>
+        <li>Distinguishes between statistic of a population and estimating the statistic.</li>
+        <li>Explains the difference between point estimation Vs. interval estimation for a statistic in a population.</li>
+        <li>Interprets the concept of an interval of confidence in real life applications of economy and finance.</li>
+        <li>Calculates the confidence interval for the mean when the variance is known.</li>
+        <li>Stablishes the sample size so the error will not exceed a specified amount.</li>
+        <li>Constructs the confidence interval for a proportion.</li>
+        <li>Calculates confidence intervals applying t-student distribution in context situations.</li>
+        <li>Estimates the confidence interval for the mean when the variance is unknown in context situations.</li>
+        <li>Concludes about a statistical parameter in situations in finance and economy.</li>
       </ol>
     </section>
 
     <section>
-      <h2>Decision Process</h2>
+      <h2>Interval Basics</h2>
       <ul>
-        <li><strong>Define alternatives:</strong> List feasible actions.</li>
-        <li><strong>Identify states:</strong> Outcomes of nature that affect payoffs.</li>
-        <li><strong>Assign probabilities:</strong> Based on data or expert judgment.</li>
-        <li><strong>Evaluate:</strong> Compute expected values or utilities, then choose.</li>
+        <li><strong>Point vs. interval:</strong> A single-value estimate is precise but uncertain; an interval brackets plausible values with a stated confidence level.</li>
+        <li><strong>Known variance:</strong> Use Z-based critical values when population variance is available.</li>
+        <li><strong>Unknown variance:</strong> Use t-student with sample standard deviation and degrees of freedom.</li>
       </ul>
     </section>
 
     <section>
-      <h2>Decision Trees & EMV</h2>
-      <p>Decision trees show decisions (squares) and chance nodes (circles). The expected monetary value (EMV) at a chance node is the probability-weighted average of payoffs.</p>
+      <h2>Planning Samples</h2>
       <div class="example">
-        <strong>Example:</strong> Choose between a safe project ($40k guaranteed) and a risky project (40% chance of $120k, 60% chance of $10k). EMV(risky) = 0.4×120k + 0.6×10k = $54k &gt; $40k, so risky dominates by EMV.
-      </div>
-    </section>
-
-    <section>
-      <h2>Risk & Utility</h2>
-      <ul>
-        <li><strong>Risk-neutral:</strong> Maximize EMV.</li>
-        <li><strong>Risk-averse:</strong> Use concave utility (e.g., U(x)=√x) to value outcomes.</li>
-        <li><strong>Risk-seeking:</strong> Use convex utility to emphasize large gains.</li>
-      </ul>
-      <p>Sensitivity analysis tests how decisions change when probabilities or payoffs shift.</p>
+        <strong>Example:</strong> For a 95% confidence interval on a mean with σ = 10 and margin of error E = 2, need n ≥ (Z<sub>0.025</sub>·σ / E)^2 = (1.96·10 / 2)^2 ≈ 97.</div>
+      <p>Determining sample sizes keeps error within desired bounds and balances cost with precision.</p>
     </section>
 
     <section class="support-section">
       <h2>Support Materials</h2>
       <ul class="support-grid">
         <li class="resource-card">
-          <h3><a href="pages/expected_value.html">Expected Value (Web Page)</a></h3>
-          <p>Interactive explanation and examples that connect expected value to decision criteria.</p>
-        </li>
-        <li class="resource-card">
-          <h3><a href="https://correosanbartoloedu-my.sharepoint.com/:b:/g/personal/nicolas_lopez_sanbartolo_edu_co/IQD2cqp8sSyyQY6U3ZYKjQrKAbmoZzw5XlJMtZI0u1eMKzA?e=R7Z87E" target="_blank" rel="noopener noreferrer">OneDrive Handout</a></h3>
-          <p>Downloadable reference with guided decision tree practice problems.</p>
+          <h3><a href="pages/distributions.html">Page Distributions (Web Page)</a></h3>
+          <p>Reference page for distribution-related materials (content forthcoming).</p>
         </li>
       </ul>
     </section>
