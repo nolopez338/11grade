@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Second Term | Analysis of Decisions</title>
+  <style>
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; background: #f8fafc; color: #0f172a; }
+    header { background: #0f766e; color: #fff; padding: 26px 20px; }
+    header a { color: #a5f3fc; text-decoration: none; font-weight: 600; }
+    main { max-width: 900px; margin: 0 auto; padding: 26px 20px 50px; }
+    h1 { margin-top: 8px; }
+    section { background: #fff; border-radius: 14px; padding: 18px 16px; box-shadow: 0 8px 20px rgba(0,0,0,0.08); border: 1px solid #e2e8f0; margin-bottom: 16px; }
+    h2 { color: #0f766e; margin-top: 0; }
+    ul { margin: 10px 0 0 20px; }
+    .example { background: #ecfeff; padding: 12px; border-radius: 10px; border: 1px solid #99f6e4; }
+    .support-section h2 { display: flex; align-items: center; gap: 8px; }
+    .support-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; padding: 0; margin: 10px 0 0; list-style: none; }
+    .resource-card { border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px; background: linear-gradient(135deg, #f8fbff, #ecfeff); box-shadow: 0 8px 20px rgba(0,0,0,0.06); }
+    .resource-card h3 { margin: 0 0 6px; color: #0f766e; font-size: 1.05rem; }
+    .resource-card p { margin: 0; color: #334155; }
+    .resource-card a { color: #0ea5e9; text-decoration: none; font-weight: 600; }
+    .resource-card a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <header>
+    <a href="../index.html">&larr; Back to main</a>
+    <h1>Analysis of Decisions</h1>
+    <p>Decision-making frameworks with and without probabilities, emphasizing expected value and portfolio thinking.</p>
+  </header>
+
+  <main>
+    <section>
+      <h2>Conceptual Referents</h2>
+      <ul>
+        <li>Random variable</li>
+        <li>Probability distributions</li>
+        <li>Subjective probability</li>
+        <li>Mean and variance of discrete distributions</li>
+        <li>Investment portfolio</li>
+        <li>Expected value</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Achievement Criteria</h2>
+      <ol>
+        <li>Describes the way a problem can be formulated for optimal decision making.</li>
+        <li>Interprets the parts of a problem such as decision alternatives, fortuitous events, consequences, and states of nature.</li>
+        <li>Builds a payoff table from a description of the problem.</li>
+        <li>Explains how a decision-making problem without probabilities works (criterion maximax).</li>
+        <li>Summarizes how a decision-making problem without probabilities works (criterion maximin).</li>
+        <li>Develops decision-making strategies to address problems with probabilities and maximum opportunity criterion.</li>
+        <li>Uses probabilities and expected value to work on a decision-making problem.</li>
+        <li>Compares the Bayes decision rule for decision making without experimentation and the Bayes, maximin and minimax methods.</li>
+        <li>Establishes the tree diagram for a decision-making problem.</li>
+        <li>Evaluates all possibilities in a decision-making problem using the different strategies presented so far.</li>
+      </ol>
+    </section>
+
+    <section>
+      <h2>Decision Process</h2>
+      <ul>
+        <li><strong>Define alternatives:</strong> List feasible actions.</li>
+        <li><strong>Identify states:</strong> Outcomes of nature that affect payoffs.</li>
+        <li><strong>Assign probabilities:</strong> Based on data or expert judgment.</li>
+        <li><strong>Evaluate:</strong> Compute expected values or utilities, then choose.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Decision Trees & EMV</h2>
+      <p>Decision trees show decisions (squares) and chance nodes (circles). The expected monetary value (EMV) at a chance node is the probability-weighted average of payoffs.</p>
+      <div class="example">
+        <strong>Example:</strong> Choose between a safe project ($40k guaranteed) and a risky project (40% chance of $120k, 60% chance of $10k). EMV(risky) = 0.4×120k + 0.6×10k = $54k &gt; $40k, so risky dominates by EMV.
+      </div>
+    </section>
+
+    <section>
+      <h2>Risk & Utility</h2>
+      <ul>
+        <li><strong>Risk-neutral:</strong> Maximize EMV.</li>
+        <li><strong>Risk-averse:</strong> Use concave utility (e.g., U(x)=√x) to value outcomes.</li>
+        <li><strong>Risk-seeking:</strong> Use convex utility to emphasize large gains.</li>
+      </ul>
+      <p>Sensitivity analysis tests how decisions change when probabilities or payoffs shift.</p>
+    </section>
+
+    <section class="support-section">
+      <h2>Support Materials</h2>
+      <ul class="support-grid">
+        <li class="resource-card">
+          <h3><a href="pages/expected_value.html">Expected Value (Web Page)</a></h3>
+          <p>Interactive explanation and examples that connect expected value to decision criteria.</p>
+        </li>
+        <li class="resource-card">
+          <h3><a href="https://correosanbartoloedu-my.sharepoint.com/:b:/g/personal/nicolas_lopez_sanbartolo_edu_co/IQD2cqp8sSyyQY6U3ZYKjQrKAbmoZzw5XlJMtZI0u1eMKzA?e=R7Z87E" target="_blank" rel="noopener noreferrer">OneDrive Handout</a></h3>
+          <p>Downloadable reference with guided decision tree practice problems.</p>
+        </li>
+      </ul>
+    </section>
+  </main>
+</body>
+</html>
