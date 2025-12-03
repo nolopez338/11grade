@@ -76,31 +76,46 @@
         <h3>📊 Example: Estimating Quiz Scores with a Confidence Interval</h3>
         <p><strong>Context:</strong> A teacher wants to estimate the average score her students received on a short quiz. She randomly selects 5 students and records their scores out of 10.</p>
         <p><strong>Scores:</strong> 6, 7, 8, 6, 9</p>
-        <h4>Step 1: Calculate the Sample Mean (x̄)</h4>
+        <h4>Step 1: Calculate the Sample Mean (\(\bar{x}\))</h4>
         <p>We add all the scores and divide by the number of students:</p>
-        <p><code>x̄ = (6 + 7 + 8 + 6 + 9) / 5 = 36 / 5 = 7.2</code></p>
+        <p><span class="math">\(\bar{x} = \dfrac{6 + 7 + 8 + 6 + 9}{5} = \dfrac{36}{5} = 7.2\)</span></p>
         <p>This is our best estimate of the population mean based on the sample.</p>
         <h4>Step 2: Calculate the Sample Standard Deviation (s)</h4>
         <p>First, subtract the mean from each score and square the result:</p>
         <ul>
-          <li>(6 − 7.2)² = 1.44</li>
-          <li>(7 − 7.2)² = 0.04</li>
-          <li>(8 − 7.2)² = 0.64</li>
-          <li>(6 − 7.2)² = 1.44</li>
-          <li>(9 − 7.2)² = 3.24</li>
+          <li>\((6 - 7.2)^2 = 1.44\)</li>
+          <li>\((7 - 7.2)^2 = 0.04\)</li>
+          <li>\((8 - 7.2)^2 = 0.64\)</li>
+          <li>\((6 - 7.2)^2 = 1.44\)</li>
+          <li>\((9 - 7.2)^2 = 3.24\)</li>
         </ul>
-        <p>Sum of squared differences: <code>1.44 + 0.04 + 0.64 + 1.44 + 3.24 = 6.8</code></p>
-        <p>Now divide by (n − 1), which is 4, and take the square root:</p>
-        <p><code>s = √(6.8 / 4) = √1.7 ≈ 1.30</code></p>
+        <p>Sum of squared differences: <span class="math">\(1.44 + 0.04 + 0.64 + 1.44 + 3.24 = 6.8\)</span></p>
+        <p>Now divide by \((n - 1)\), which is 4, and take the square root:</p>
+        <p><span class="math">\(s = \sqrt{\dfrac{6.8}{4}} = \sqrt{1.7} \approx 1.30\)</span></p>
         <p>This value tells us how spread out the quiz scores are around the mean.</p>
         <h4>Step 3: Compute the Margin of Error (E)</h4>
         <p>Using a 95% confidence level, the critical value (Z) is 1.96. The formula for the margin of error is:</p>
-        <p><code>E = 1.96 ⋅ (1.3 / √5) ≈ 1.14</code></p>
+        <p><span class="math">\(E = 1.96 \cdot \dfrac{1.3}{\sqrt{5}} \approx 1.14\)</span></p>
         <h4>Step 4: Find the Confidence Interval</h4>
-        <p>Now we calculate the range: <code>CI = 7.2 ± 1.14</code></p>
-        <p>So the 95% confidence interval is: <code>(6.06, 8.34)</code></p>
+        <p>Now we calculate the range: <span class="math">\(CI = 7.2 \pm 1.14\)</span></p>
+        <p>So the 95% confidence interval is: <span class="math">\((6.06,\, 8.34)\)</span></p>
         <h4>✅ Interpretation</h4>
         <p>We are 95% confident that the average quiz score for the entire class is between <strong>6.06 and 8.34</strong> based on our sample.</p>
+      </div>
+      <div class="example" style="display: grid; gap: 10px;">
+        <h3>📈 Example: Planning Samples with Grouped Data</h3>
+        <p><strong>Context:</strong> A factory tracks defect rates for two production lines and wants a margin of error no greater than 0.03 for the difference in proportions at a 95% confidence level.</p>
+        <p><strong>Previous data:</strong> Line 1 had \(x_1 = 18\) defects in \(n_1 = 200\) items, while Line 2 had \(x_2 = 30\) defects in \(n_2 = 250\) items.</p>
+        <h4>Step 1: Estimate the proportions</h4>
+        <p><span class="math">\(\hat{p}_1 = \dfrac{x_1}{n_1} = \dfrac{18}{200} = 0.09\)</span> and <span class="math">\(\hat{p}_2 = \dfrac{x_2}{n_2} = \dfrac{30}{250} = 0.12\)</span>.</p>
+        <h4>Step 2: Find the pooled variance term</h4>
+        <p>For planning, use the conservative estimate \(\hat{p}(1-\hat{p})\) with \(\hat{p} = 0.5\): <span class="math">\(\hat{p}(1-\hat{p}) = 0.25\)</span>.</p>
+        <h4>Step 3: Solve for sample size per line</h4>
+        <p>With \(z_{\alpha/2} = 1.96\) and desired margin \(E = 0.03\), plan for equal group sizes \(n\):</p>
+        <p><span class="math">\(n = 2 \cdot \dfrac{z_{\alpha/2}^2 \; \hat{p}(1-\hat{p})}{E^2} = 2 \cdot \dfrac{1.96^2 \times 0.25}{0.03^2} \approx 2{,}132\)</span></p>
+        <p>Each line should sample about <strong>2,132</strong> items to achieve the desired precision.</p>
+        <h4>✅ Interpretation</h4>
+        <p>Using grouped counts \((x_1, x_2)\), the planning formula shows how many observations per line are needed to keep the margin of error within 0.03 for the difference in proportions.</p>
       </div>
       <p>Determining sample sizes keeps error within desired bounds and balances cost with precision.</p>
     </section>
