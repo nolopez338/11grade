@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <title>1D Data Generator</title>
+
 <style>
 body {
   font-family: Arial;
@@ -19,6 +20,56 @@ body {
   border-radius: 10px;
 }
 
+/* Top layout: equation | PDF graph | title */
+.top-layout {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 10px;
+}
+
+#equationBox {
+  flex: 1;
+  max-width: 260px;
+  font-size: 12px;
+  color: #111827;
+  white-space: normal;
+  background: #f9fafb;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  padding: 8px;
+  box-sizing: border-box;
+}
+
+#pdfPanel {
+  flex: 1;
+  max-width: 260px;
+  background: #f9fafb;
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  box-sizing: border-box;
+}
+
+#pdfCanvas {
+  width: 100%;
+  height: 140px;
+  background: #ffffff;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+/* Title on the right */
+.title-block {
+  flex: 1;
+  text-align: right;
+}
+
+.title-block h2 {
+  margin: 0;
+}
+
+/* Rest of layout */
 .param-row { margin: 10px 0; }
 
 button {
@@ -94,11 +145,38 @@ canvas {
   background: #16a34a;
 }
 </style>
+
+<!-- MathJax configuration + script -->
+<script>
+window.MathJax = {
+  tex: {
+    inlineMath: [['$', '$'], ['\\(', '\\)']],
+    displayMath: [['$$', '$$'], ['\\[', '\\]']]
+  },
+  svg: { fontCache: 'global' }
+};
+</script>
+<script id="MathJax-script"
+        async
+        src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+</script>
 </head>
 <body>
 
 <div class="container">
-  <h2>1D Data Generator</h2>
+
+  <!-- Top layout: equation | PDF graph | title -->
+  <div class="top-layout">
+    <div id="equationBox"></div>
+
+    <div id="pdfPanel">
+      <canvas id="pdfCanvas"></canvas>
+    </div>
+
+    <div class="title-block">
+      <h2>1D Data Generator</h2>
+    </div>
+  </div>
 
   <div class="param-row">
     <label>Category</label>
@@ -113,6 +191,7 @@ canvas {
     <select id="distribution"></select>
   </div>
 
+  <!-- Parameter controls -->
   <div id="parameters"></div>
 
   <div class="param-row">
@@ -218,6 +297,47 @@ const histCtx = histCanvas.getContext("2d");
 
 const tooltip = document.getElementById("tooltip");
 
+// PDF panel
+const pdfCanvas = document.getElementById("pdfCanvas");
+const pdfCtx = pdfCanvas.getContext("2d");
+const equationBoxEl = document.getElementById("equationBox");
+
+// Distribution equations in TeX (rendered by MathJax)
+const distributionEquations = {
+  Bernoulli:
+    "\\(\\text{Bernoulli}(p)\\)<br>" +
+    "Support: \\(x \\in \\{0,1\\}\\)<br>" +
+    "PMF: \\(P(X=1)=p,\\; P(X=0)=1-p\\)",
+  Binomial:
+    "\\(\\text{Binomial}(n,p)\\)<br>" +
+    "Support: \\(k=0,1,\\dots,n\\)<br>" +
+    "PMF: \\(P(X=k) = \\binom{n}{k} p^k (1-p)^{n-k}\\)",
+  Geometric:
+    "\\(\\text{Geometric}(p)\\)<br>" +
+    "Support: \\(k=1,2,\\dots\\)<br>" +
+    "PMF: \\(P(X=k) = (1-p)^{k-1} p\\)",
+  Poisson:
+    "\\(\\text{Poisson}(\\lambda)\\)<br>" +
+    "Support: \\(k=0,1,2,\\dots\\)<br>" +
+    "PMF: \\(P(X=k) = e^{-\\lambda} \\dfrac{\\lambda^k}{k!}\\)",
+  Uniform:
+    "\\(\\text{Uniform}(a,b)\\)<br>" +
+    "PDF: " +
+    "\\[ f(x) = \\begin{cases} \\dfrac{1}{b-a}, & a \\le x \\le b \\\\ 0, & \\text{otherwise} \\end{cases} \\]",
+  Normal:
+    "\\(\\text{Normal}(\\mu,\\sigma)\\)<br>" +
+    "PDF: " +
+    "\\[ f(x) = \\dfrac{1}{\\sigma\\sqrt{2\\pi}} \\exp\\!\\left(-\\dfrac{(x-\\mu)^2}{2\\sigma^2}\\right) \\]",
+  Exponential:
+    "\\(\\text{Exponential}(\\lambda)\\)<br>" +
+    "PDF: " +
+    "\\[ f(x) = \\lambda e^{-\\lambda x}, \\quad x \\ge 0 \\]",
+  Gamma:
+    "\\(\\text{Gamma}(k,\\theta)\\)<br>" +
+    "PDF: " +
+    "\\[ f(x) = \\dfrac{x^{k-1} e^{-x/\\theta}}{\\Gamma(k)\\,\\theta^k}, \\quad x \\ge 0 \\]"
+};
+
 function resizeCanvas(canvas) {
   canvas.width = canvas.offsetWidth;
   canvas.height = canvas.offsetHeight;
@@ -227,6 +347,21 @@ function resizeCanvas(canvas) {
 const categorySel = document.getElementById("category");
 const distSel = document.getElementById("distribution");
 const paramDiv = document.getElementById("parameters");
+
+function updateDistributionEquation() {
+  const dist = distSel.value;
+  equationBoxEl.innerHTML = distributionEquations[dist] || "";
+  if (window.MathJax && window.MathJax.typesetPromise) {
+    MathJax.typesetPromise([equationBoxEl]);
+  }
+}
+
+function attachParamListenersForPDF() {
+  const inputs = paramDiv.querySelectorAll("input[type='number']");
+  inputs.forEach(inp => {
+    inp.addEventListener("input", drawPDF);
+  });
+}
 
 function updateDistributionOptions() {
   distSel.innerHTML = "";
@@ -238,6 +373,7 @@ function updateDistributionOptions() {
     distSel.appendChild(opt);
   });
   updateParameters();
+  updateDistributionEquation();
 }
 
 function updateParameters() {
@@ -259,6 +395,9 @@ function updateParameters() {
   if (dist === "Normal") { inp("μ", "mu", 0); inp("σ", "sigma", 1); }
   if (dist === "Exponential") inp("λ", "lambda", 1);
   if (dist === "Gamma") { inp("k", "k", 2); inp("θ", "theta", 2); }
+
+  attachParamListenersForPDF();
+  drawPDF();
 }
 
 // RNG helpers
@@ -317,6 +456,245 @@ function getTrueMean() {
   return null;
 }
 
+// Gamma function (Lanczos approximation)
+function gammaFn(z) {
+  const g = 7;
+  const p = [
+    0.99999999999980993,
+    676.5203681218851,
+   -1259.1392167224028,
+    771.32342877765313,
+   -176.61502916214059,
+    12.507343278686905,
+   -0.13857109526572012,
+    9.9843695780195716e-6,
+    1.5056327351493116e-7
+  ];
+
+  if (z < 0.5) {
+    return Math.PI / (Math.sin(Math.PI * z) * gammaFn(1 - z));
+  } else {
+    z -= 1;
+    let x = p[0];
+    for (let i = 1; i < p.length; i++) {
+      x += p[i] / (z + i);
+    }
+    const t = z + g + 0.5;
+    return Math.sqrt(2 * Math.PI) * Math.pow(t, z + 0.5) * Math.exp(-t) * x;
+  }
+}
+
+// Draw small PDF/PMF graph for current distribution and parameters (with ticks)
+function drawPDF() {
+  resizeCanvas(pdfCanvas);
+  const ctx = pdfCtx;
+  ctx.clearRect(0, 0, pdfCanvas.width, pdfCanvas.height);
+
+  const W = pdfCanvas.width;
+  const H = pdfCanvas.height;
+  if (!W || !H) return;
+
+  const dist = distSel.value;
+  if (!dist) return;
+
+  const marginLeft = 40;
+  const marginBottom = 24;
+  const topMargin = 8;
+  const rightMargin = 8;
+  const effW = W - marginLeft - rightMargin;
+  const effH = H - marginBottom - topMargin;
+  if (effW <= 0 || effH <= 0) return;
+
+  // Read parameters (may be NaN if not present)
+  const p = parseFloat(document.getElementById("p")?.value);
+  const nBin = parseInt(document.getElementById("n")?.value);
+  const a = parseFloat(document.getElementById("a")?.value);
+  const b = parseFloat(document.getElementById("b")?.value);
+  const mu = parseFloat(document.getElementById("mu")?.value);
+  const sigma = parseFloat(document.getElementById("sigma")?.value);
+  const lambda = parseFloat(document.getElementById("lambda")?.value);
+  const kshape = parseFloat(document.getElementById("k")?.value);
+  const theta = parseFloat(document.getElementById("theta")?.value);
+
+  const isDiscrete = ["Bernoulli","Binomial","Geometric","Poisson"].includes(dist);
+
+  let xs = [];
+  let ys = [];
+
+  // Build xs, ys
+  try {
+    if (dist === "Bernoulli") {
+      if (!(p >= 0 && p <= 1)) throw new Error();
+      xs = [0, 1];
+      ys = [1 - p, p];
+    } else if (dist === "Binomial") {
+      if (!(Number.isFinite(nBin) && nBin >= 0 && p >= 0 && p <= 1)) throw new Error();
+      for (let k = 0; k <= nBin; k++) {
+        let coeff = 1;
+        for (let i = 1; i <= k; i++) {
+          coeff *= (nBin + 1 - i) / i;
+        }
+        const val = coeff * Math.pow(p, k) * Math.pow(1 - p, nBin - k);
+        xs.push(k);
+        ys.push(val);
+      }
+    } else if (dist === "Geometric") {
+      if (!(p > 0 && p <= 1)) throw new Error();
+      const maxK = Math.min(30, Math.max(10, Math.ceil(5 / p)));
+      for (let k = 1; k <= maxK; k++) {
+        xs.push(k);
+        ys.push(Math.pow(1 - p, k - 1) * p);
+      }
+    } else if (dist === "Poisson") {
+      if (!(lambda > 0)) throw new Error();
+      const maxK = Math.max(10, Math.min(40, Math.ceil(lambda + 4 * Math.sqrt(lambda))));
+      let base = Math.exp(-lambda);
+      let prob = base;
+      xs.push(0); ys.push(prob);
+      for (let k = 1; k <= maxK; k++) {
+        prob *= lambda / k;
+        xs.push(k);
+        ys.push(prob);
+      }
+    } else if (dist === "Uniform") {
+      if (!(Number.isFinite(a) && Number.isFinite(b) && b > a)) throw new Error();
+      const nPoints = 100;
+      const height = 1 / (b - a);
+      for (let i = 0; i <= nPoints; i++) {
+        const x = a + (i / nPoints) * (b - a);
+        xs.push(x);
+        ys.push(height);
+      }
+    } else if (dist === "Normal") {
+      if (!(Number.isFinite(mu) && Number.isFinite(sigma) && sigma > 0)) throw new Error();
+      const nPoints = 120;
+      const xMin = mu - 4 * sigma;
+      const xMax = mu + 4 * sigma;
+      for (let i = 0; i <= nPoints; i++) {
+        const x = xMin + (i / nPoints) * (xMax - xMin);
+        const y = 1 / (sigma * Math.sqrt(2 * Math.PI)) *
+                  Math.exp(-Math.pow(x - mu, 2) / (2 * sigma * sigma));
+        xs.push(x);
+        ys.push(y);
+      }
+    } else if (dist === "Exponential") {
+      if (!(lambda > 0)) throw new Error();
+      const nPoints = 100;
+      const xMax = 5 / lambda;
+      for (let i = 0; i <= nPoints; i++) {
+        const x = (i / nPoints) * xMax;
+        const y = lambda * Math.exp(-lambda * x);
+        xs.push(x);
+        ys.push(y);
+      }
+    } else if (dist === "Gamma") {
+      if (!(kshape > 0 && theta > 0)) throw new Error();
+      const nPoints = 140;
+      const xMax = Math.max(5, kshape * theta * 3);
+      const gammaK = gammaFn(kshape);
+      for (let i = 0; i <= nPoints; i++) {
+        const x = (i / nPoints) * xMax;
+        const y = x <= 0
+          ? 0
+          : Math.pow(x, kshape - 1) * Math.exp(-x / theta) /
+            (gammaK * Math.pow(theta, kshape));
+        xs.push(x);
+        ys.push(y);
+      }
+    }
+  } catch (e) {
+    return;
+  }
+
+  if (!xs.length) return;
+
+  let xMin = Math.min(...xs);
+  let xMax = Math.max(...xs);
+  let yMax = Math.max(...ys);
+  let yMin = 0;
+
+  if (xMax === xMin) {
+    xMax += 1;
+    xMin -= 1;
+  }
+  if (yMax <= 0) yMax = 1;
+
+  ctx.strokeStyle = "#cccccc";
+  ctx.lineWidth = 1;
+
+  const xAxisY = H - marginBottom;
+  ctx.beginPath();
+  ctx.moveTo(marginLeft, xAxisY);
+  ctx.lineTo(W - rightMargin, xAxisY);
+  ctx.stroke();
+
+  const yAxisX = marginLeft;
+  ctx.beginPath();
+  ctx.moveTo(yAxisX, topMargin);
+  ctx.lineTo(yAxisX, H - marginBottom);
+  ctx.stroke();
+
+  const xToPix = x => marginLeft + (x - xMin) / (xMax - xMin) * effW;
+  const yToPix = y => (1 - (y - yMin) / (yMax - yMin)) * effH + topMargin;
+
+  ctx.font = "10px Arial";
+  ctx.fillStyle = "#111";
+
+  const xTicks = 4;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "top";
+  for (let i = 0; i <= xTicks; i++) {
+    const t = i / xTicks;
+    const xVal = xMin + t * (xMax - xMin);
+    const xPix = xToPix(xVal);
+    ctx.beginPath();
+    ctx.moveTo(xPix, xAxisY);
+    ctx.lineTo(xPix, xAxisY + 4);
+    ctx.stroke();
+    ctx.fillText(xVal.toFixed(2), xPix, xAxisY + 6);
+  }
+
+  const yTicks = 3;
+  ctx.textAlign = "right";
+  ctx.textBaseline = "middle";
+  for (let i = 0; i <= yTicks; i++) {
+    const t = i / yTicks;
+    const yVal = yMin + t * (yMax - yMin);
+    const yPix = yToPix(yVal);
+    ctx.beginPath();
+    ctx.moveTo(yAxisX - 4, yPix);
+    ctx.lineTo(yAxisX, yPix);
+    ctx.stroke();
+    ctx.fillText(yVal.toFixed(2), yAxisX - 6, yPix);
+  }
+
+  ctx.strokeStyle = "#4a7bd1";
+  ctx.fillStyle = "#4a7bd1";
+  ctx.lineWidth = 1.5;
+
+  if (isDiscrete) {
+    const n = xs.length;
+    const baseBarW = effW / (n * 1.5);
+    for (let i = 0; i < n; i++) {
+      const xCenter = xToPix(xs[i]);
+      const barW = Math.max(3, baseBarW);
+      const barH = (ys[i] - yMin) / (yMax - yMin) * effH;
+      const x = xCenter - barW / 2;
+      const y = yToPix(ys[i]);
+      ctx.fillRect(x, y, barW, xAxisY - y);
+    }
+  } else {
+    ctx.beginPath();
+    for (let i = 0; i < xs.length; i++) {
+      const x = xToPix(xs[i]);
+      const y = yToPix(ys[i]);
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+  }
+}
+
 // generate data
 function generate(n) {
   const dist = distSel.value;
@@ -358,13 +736,10 @@ function generate(n) {
 
   const slider = document.getElementById("displaySlider");
 
-  // Preserve previous displayedPoints / slider value if possible
   let previousDisplay = displayedPoints || parseInt(slider.value) || 0;
 
-  // Update slider max for new sample size
   slider.max = n;
 
-  // If we had a previous display count, keep it (clamped to new max)
   if (previousDisplay > 0) {
     const newDisplay = Math.min(previousDisplay, n);
     slider.value = newDisplay;
@@ -380,7 +755,6 @@ function generate(n) {
   document.getElementById("pointSizeRow").style.display = "block";
   document.getElementById("extraLinesRow").style.display = "block";
 
-  // If CI is currently enabled, keep the slider visible
   const ciSliderRow = document.getElementById("ciSliderRow");
   ciSliderRow.style.display = showCI ? "block" : "none";
 
@@ -388,7 +762,7 @@ function generate(n) {
   drawHistogram();
 }
 
-// axes
+// axes for main graphs
 function drawAxes(ctx, W, H, minY, maxY, xLabel, yLabel) {
   const marginLeft = 60;
   const marginBottom = 40;
@@ -517,7 +891,6 @@ function drawLabel(ctx, x, y, text, W, H) {
   let bx = x;
   let by = y - boxH / 2;
 
-  // clamp inside canvas
   if (bx + boxW > W - 5) bx = W - 5 - boxW;
   if (bx < 5) bx = 5;
   if (by < 5) by = 5;
@@ -581,16 +954,13 @@ function drawScatter() {
     }
   }
 
-  // Theoretical true average from parameters
   const trueMean = getTrueMean();
 
-  // Sample mean of first N points (for CI)
   let sampleMean = null;
   if (N > 0) {
     sampleMean = runningMean[N - 1];
   }
 
-  // Confidence interval bounds (sample-based)
   let ciLower = null;
   let ciUpper = null;
   if (showCI && N > 1) {
@@ -603,7 +973,6 @@ function drawScatter() {
     if (ciUpper > maxY) maxY = ciUpper;
   }
 
-  // Enforce vertical symmetry around trueMean if it exists
   if (trueMean != null && isFinite(trueMean)) {
     let distBelow = trueMean - minY;
     let distAbove = maxY - trueMean;
@@ -630,18 +999,16 @@ function drawScatter() {
 
   pointPositions = [];
 
-  // If a histogram bin is hovered, draw a translucent blue band for that value range
   if (hoveredBinRange && isFinite(hoveredBinRange.min) && isFinite(hoveredBinRange.max)) {
     const y1 = valueToY(hoveredBinRange.max);
     const y2 = valueToY(hoveredBinRange.min);
     const yTop = Math.min(y1, y2);
     const height = Math.abs(y2 - y1);
 
-    ctx.fillStyle = "rgba(59, 130, 246, 0.18)"; // translucent blue
+    ctx.fillStyle = "rgba(59, 130, 246, 0.18)";
     ctx.fillRect(marginLeft, yTop, effectiveW, height);
   }
 
-  // Confidence interval band + static labels for bounds (now light orange fill)
   let yLower, yUpper;
   if (showCI && N > 1 && ciLower != null && ciUpper != null) {
     yLower = valueToY(ciLower);
@@ -649,7 +1016,7 @@ function drawScatter() {
     const yTop = Math.min(yLower, yUpper);
     const height = Math.abs(yUpper - yLower);
 
-    ctx.fillStyle = "rgba(249, 115, 22, 0.15)";   // light orange
+    ctx.fillStyle = "rgba(249, 115, 22, 0.15)";
     ctx.fillRect(marginLeft, yTop, effectiveW, height);
 
     ctx.strokeStyle = "rgba(249, 115, 22, 0.7)";
@@ -662,7 +1029,6 @@ function drawScatter() {
     ctx.stroke();
   }
 
-  // Data points
   const hoverRadius = Math.max(5, pointSize);
   ctx.fillStyle = "#222";
 
@@ -677,7 +1043,6 @@ function drawScatter() {
     pointPositions.push({ x, y, index: i, value: data[i], r: hoverRadius });
   }
 
-  // Running mean line + small highlight circle + static tooltip
   if (showMean) {
     ctx.strokeStyle = "#2563eb";
     ctx.lineWidth = 2;
@@ -712,7 +1077,6 @@ function drawScatter() {
     }
   }
 
-  // Running std line + small highlight circle + static tooltip
   if (showStd) {
     ctx.strokeStyle = "#16a34a";
     ctx.lineWidth = 2;
@@ -747,7 +1111,6 @@ function drawScatter() {
     }
   }
 
-  // True average horizontal line (theoretical mean) + static tooltip
   if (showOverallMean && trueMean != null && isFinite(trueMean)) {
     const yTrue = valueToY(trueMean);
     ctx.strokeStyle = "#f97316";
@@ -760,23 +1123,19 @@ function drawScatter() {
     ctx.setLineDash([]);
 
     const labelText = "True μ: " + trueMean.toFixed(3);
-    const xLabel = marginLeft + 10; // left side of graph
+    const xLabel = marginLeft + 10;
     drawLabel(ctx, xLabel, yTrue, labelText, W, H);
   }
 
-  // Static labels for CI bounds (both ends)
   if (showCI && N > 1 && ciLower != null && ciUpper != null) {
     const labelLow = "CI low: " + ciLower.toFixed(3);
     const labelHigh = "CI high: " + ciUpper.toFixed(3);
-    const xLabel = marginLeft + 10;   // keep near left side
+    const xLabel = marginLeft + 10;
 
     const yLowPix = valueToY(ciLower);
     const yHighPix = valueToY(ciUpper);
 
-    // Low bound label below its line
     drawLabel(ctx, xLabel, yLowPix + 14, labelLow, W, H);
-
-    // High bound label above its line
     drawLabel(ctx, xLabel, yHighPix - 14, labelHigh, W, H);
   }
 }
@@ -1006,12 +1365,16 @@ ciSlider.addEventListener("input", () => {
 
 // init (default: Continuous / Normal)
 categorySel.addEventListener("change", updateDistributionOptions);
-distSel.addEventListener("change", updateParameters);
+distSel.addEventListener("change", () => {
+  updateParameters();
+  updateDistributionEquation();
+});
 
-// Build options based on initial category, then set Normal by default
 updateDistributionOptions();
 distSel.value = "Normal";
 updateParameters();
+updateDistributionEquation();
+drawPDF();
 </script>
 
 </body>
