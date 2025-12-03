@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>1D Data Generator</title>
+<style>
+body {
+  font-family: Arial;
+  padding: 20px;
+  background: #f4f4f4;
+  margin: 0;
+}
+
+.container {
+  max-width: 960px;
+  margin: auto;
+  background: #fff;
+  padding: 20px;
+  border-radius: 10px;
+}
+
+.param-row { margin: 10px 0; }
+
+button {
+  padding: 8px 15px;
+  margin: 5px;
+  background: #4a7bd1;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+button:hover { background: #3759a3; }
+
+.arrow-btn {
+  background: #888;
+  width: 32px;
+  font-weight: bold;
+  padding: 5px 0;
+}
+
+.arrow-btn:hover {
+  background: #666;
+}
+
+.graph-container {
+  width: 100%;
+  height: 420px;
+  background: #eee;
+  margin-top: 20px;
+  position: relative;
+}
+
+.hist-container {
+  width: 100%;
+  height: 280px;
+  background: #eee;
+  margin-top: 20px;
+  position: relative;
+}
+
+canvas {
+  width: 100%;
+  height: 100%;
+}
+
+.tooltip {
+  position: fixed;
+  background: #000;
+  color: white;
+  padding: 4px 7px;
+  border-radius: 5px;
+  pointer-events: none;
+  display: none;
+  font-size: 12px;
+  z-index: 9999;
+}
+
+/* Legend styles */
+.legend-box {
+  display: inline-block;
+  width: 14px;
+  height: 8px;
+  margin-right: 4px;
+  vertical-align: middle;
+}
+
+.legend-mean {
+  background: #2563eb;
+}
+
+.legend-std {
+  background: #16a34a;
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+  <h2>1D Data Generator</h2>
+
+  <div class="param-row">
+    <label>Category</label>
+    <select id="category">
+      <option value="discrete">Discrete</option>
+      <option value="continuous">Continuous</option>
+    </select>
+  </div>
+
+  <div class="param-row">
+    <label>Distribution</label>
+    <select id="distribution"></select>
+  </div>
+
+  <div id="parameters"></div>
+
+  <div class="param-row">
+    <button onclick="generate(100)">100</button>
+    <button onclick="generate(1000)">1,000</button>
+    <button onclick="generate(10000)">10,000</button>
+    <button onclick="generate(100000)">100,000</button>
+    <button onclick="generate(1000000)">1,000,000</button>
+  </div>
+
+  <div class="param-row" id="sliderContainer" style="display:none;">
+    Points to display
+
+    <button id="leftArrow" class="arrow-btn">◀</button>
+
+    <input id="displaySlider" type="range" min="0" value="0" style="width:300px;">
+
+    <button id="rightArrow" class="arrow-btn">▶</button>
+
+    <span id="displayCount"></span>
+  </div>
+
+  <div class="param-row" id="pointSizeRow" style="display:none;">
+    Point size
+    <input id="pointSizeSlider" type="range" min="1" max="30" value="3" style="width:200px;">
+    <span id="pointSizeLabel">3</span> px
+  </div>
+
+  <div class="param-row" id="linesToggleRow" style="display:none;">
+    <label>
+      <input type="checkbox" id="toggleMean" checked>
+      <span class="legend-box legend-mean"></span> Running average
+    </label>
+    &nbsp;&nbsp;
+    <label>
+      <input type="checkbox" id="toggleStd" checked>
+      <span class="legend-box legend-std"></span> Running std dev
+    </label>
+  </div>
+
+  <div class="graph-container">
+    <canvas id="scatterCanvas"></canvas>
+    <div id="tooltip" class="tooltip"></div>
+  </div>
+
+  <div class="hist-container">
+    <canvas id="histCanvas"></canvas>
+  </div>
+</div>
+
+<script>
+// distributions
+const discrete = ["Bernoulli", "Binomial", "Geometric", "Poisson"];
+const continuous = ["Uniform", "Normal", "Exponential", "Gamma"];
+
+let data = [];
+let displayedPoints = 0;
+
+let histogramBars = [];
+let pointPositions = [];
+
+// toggles and point size
+let showMean = true;
+let showStd = true;
+let pointSize = 3;
+
+const scatterCanvas = document.getElementById("scatterCanvas");
+const scatterCtx = scatterCanvas.getContext("2d");
+
+const histCanvas = document.getElementById("histCanvas");
+const histCtx = histCanvas.getContext("2d");
+
+const tooltip = document.getElementById("tooltip");
+
+function resizeCanvas(canvas) {
+  canvas.width = canvas.offsetWidth;
+  canvas.height = canvas.offsetHeight;
+}
+
+// UI setup
+const categorySel = document.getElementById("category");
+const distSel = document.getElementById("distribution");
+const paramDiv = document.getElementById("parameters");
+
+function updateDistributionOptions() {
+  distSel.innerHTML = "";
+  const list = categorySel.value === "discrete" ? discrete : continuous;
+  list.forEach(d => {
+    const opt = document.createElement("option");
+    opt.textContent = d;
+    opt.value = d;
+    distSel.appendChild(opt);
+  });
+  updateParameters();
+}
+
+function updateParameters() {
+  const dist = distSel.value;
+  paramDiv.innerHTML = "";
+
+  const inp = (label, id, val) => {
+    const row = document.createElement("div");
+    row.className = "param-row";
+    row.innerHTML = `${label}: <input id="${id}" type="number" value="${val}" step="any">`;
+    paramDiv.appendChild(row);
+  };
+
+  if (dist === "Bernoulli") inp("p", "p", 0.5);
+  if (dist === "Binomial") { inp("n", "n", 10); inp("p", "p", 0.5); }
+  if (dist === "Geometric") inp("p", "p", 0.3);
+  if (dist === "Poisson") inp("λ", "lambda", 4);
+  if (dist === "Uniform") { inp("a", "a", 0); inp("b", "b", 1); }
+  if (dist === "Normal") { inp("μ", "mu", 0); inp("σ", "sigma", 1); }
+  if (dist === "Exponential") inp("λ", "lambda", 1);
+  if (dist === "Gamma") { inp("k", "k", 2); inp("θ", "theta", 2); }
+}
+
+// RNG helpers
+function randn() {
+  let u=0,v=0;
+  while(u===0) u=Math.random();
+  while(v===0) v=Math.random();
+  return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);
+}
+
+// generate data
+function generate(n) {
+  const dist = distSel.value;
+
+  const p = parseFloat(document.getElementById("p")?.value);
+  const nBin = parseInt(document.getElementById("n")?.value);
+  const a = parseFloat(document.getElementById("a")?.value);
+  const b = parseFloat(document.getElementById("b")?.value);
+  const mu = parseFloat(document.getElementById("mu")?.value);
+  const sigma = parseFloat(document.getElementById("sigma")?.value);
+  const lambda = parseFloat(document.getElementById("lambda")?.value);
+  const kshape = parseFloat(document.getElementById("k")?.value);
+  const theta = parseFloat(document.getElementById("theta")?.value);
+
+  data = [];
+
+  for (let i=0;i<n;i++) {
+    if (dist === "Bernoulli") data.push(Math.random()<p ? 1:0);
+    else if (dist === "Binomial") {
+      let s=0; for (let j=0;j<nBin;j++) if (Math.random()<p) s++;
+      data.push(s);
+    }
+    else if (dist === "Geometric") {
+      let c=1; while(Math.random()>p) c++; data.push(c);
+    }
+    else if (dist === "Poisson") {
+      let L=Math.exp(-lambda), k=0, t=1;
+      do { k++; t*=Math.random(); } while(t>L);
+      data.push(k-1);
+    }
+    else if (dist === "Uniform") data.push(a + Math.random()*(b-a));
+    else if (dist === "Normal") data.push(mu + sigma*randn());
+    else if (dist === "Exponential") data.push(-Math.log(1-Math.random())/lambda);
+    else if (dist === "Gamma") {
+      let s=0; for (let j=0;j<kshape;j++) s += -Math.log(Math.random());
+      data.push(s * theta);
+    }
+  }
+
+  const slider = document.getElementById("displaySlider");
+  slider.max = n;
+  slider.value = n;
+  displayedPoints = n;
+
+  document.getElementById("displayCount").textContent = n;
+  document.getElementById("sliderContainer").style.display = "block";
+  document.getElementById("linesToggleRow").style.display = "block";
+  document.getElementById("pointSizeRow").style.display = "block";
+
+  drawScatter();
+  drawHistogram();
+}
+
+// axes
+function drawAxes(ctx, W, H, minY, maxY, xLabel, yLabel) {
+  const marginLeft = 60;
+  const marginBottom = 40;
+
+  ctx.strokeStyle = "#cccccc";
+  ctx.beginPath();
+  ctx.moveTo(marginLeft, H - marginBottom);
+  ctx.lineTo(W - 20, H - marginBottom);
+  ctx.stroke();
+
+  ctx.strokeStyle = "#000";
+  ctx.beginPath();
+  ctx.moveTo(marginLeft, 20);
+  ctx.lineTo(marginLeft, H - marginBottom);
+  ctx.stroke();
+
+  ctx.textAlign = "center";
+  ctx.font = "14px Arial";
+  ctx.fillText(xLabel, W/2, H - 5);
+
+  ctx.save();
+  ctx.translate(15, H/2);
+  ctx.rotate(-Math.PI/2);
+  ctx.fillText(yLabel, 0, 0);
+  ctx.restore();
+
+  const ticks = 5;
+  ctx.font = "12px Arial";
+  ctx.textAlign = "right";
+
+  for (let i=0;i<=ticks;i++) {
+    const t = i/ticks;
+    const yVal = minY + t*(maxY - minY);
+    const yPix = (1-t)*(H - marginBottom - 20) + 20;
+
+    ctx.beginPath();
+    ctx.moveTo(marginLeft-5, yPix);
+    ctx.lineTo(marginLeft, yPix);
+    ctx.stroke();
+
+    ctx.fillText(yVal.toFixed(3), marginLeft-8, yPix+4);
+  }
+}
+
+// scatter + running stats
+function drawScatter() {
+  resizeCanvas(scatterCanvas);
+  const ctx = scatterCtx;
+  ctx.clearRect(0,0,scatterCanvas.width,scatterCanvas.height);
+
+  if (displayedPoints === 0 || data.length === 0) return;
+
+  const W = scatterCanvas.width;
+  const H = scatterCanvas.height;
+
+  const marginLeft = 60;
+  const marginBottom = 40;
+  const topMargin = 20;
+
+  const N = Math.min(displayedPoints, data.length);
+
+  const runningMean = new Array(N);
+  const runningStd = new Array(N);
+  let sum = 0;
+  let sumSq = 0;
+
+  let minY = Infinity;
+  let maxY = -Infinity;
+
+  for (let i = 0; i < N; i++) {
+    const v = data[i];
+    sum += v;
+    sumSq += v * v;
+    const n = i + 1;
+    const mean = sum / n;
+    const variance = n > 1 ? (sumSq / n - mean * mean) : 0;
+    const std = Math.sqrt(Math.max(variance, 0));
+
+    runningMean[i] = mean;
+    runningStd[i] = std;
+
+    if (v < minY) minY = v;
+    if (v > maxY) maxY = v;
+    if (showMean) {
+      if (mean < minY) minY = mean;
+      if (mean > maxY) maxY = mean;
+    }
+    if (showStd) {
+      if (std < minY) minY = std;
+      if (std > maxY) maxY = std;
+    }
+  }
+
+  if (maxY === minY) {
+    maxY += 1;
+    minY -= 1;
+  }
+
+  drawAxes(ctx, W, H, minY, maxY, "Sample Index", "Value");
+
+  const effectiveW = W - marginLeft - 20;
+  const effectiveH = H - marginBottom - topMargin;
+
+  const valueToY = (val) =>
+    (1 - (val - minY) / (maxY - minY + 1e-12)) * effectiveH + topMargin;
+
+  pointPositions = [];
+
+  ctx.fillStyle = "#222";
+  const hoverRadius = Math.max(5, pointSize);
+
+  for (let i = 0; i < N; i++) {
+    const x = N > 1
+      ? marginLeft + (i / (N - 1)) * effectiveW
+      : marginLeft + effectiveW / 2;
+    const y = valueToY(data[i]);
+
+    ctx.fillRect(x - pointSize / 2, y - pointSize / 2, pointSize, pointSize);
+
+    pointPositions.push({ x, y, index: i, value: data[i], r: hoverRadius });
+  }
+
+  if (showMean) {
+    ctx.strokeStyle = "#2563eb";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    for (let i = 0; i < N; i++) {
+      const x = N > 1
+        ? marginLeft + (i / (N - 1)) * effectiveW
+        : marginLeft + effectiveW / 2;
+      const y = valueToY(runningMean[i]);
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+  }
+
+  if (showStd) {
+    ctx.strokeStyle = "#16a34a";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    for (let i = 0; i < N; i++) {
+      const x = N > 1
+        ? marginLeft + (i / (N - 1)) * effectiveW
+        : marginLeft + effectiveW / 2;
+      const y = valueToY(runningStd[i]);
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+  }
+}
+
+// decision rule for bins: sqrt(n) clamped to [5, 60]
+function getBinCount(n) {
+  if (n <= 1) return 1;
+  const k = Math.round(Math.sqrt(n));
+  return Math.max(5, Math.min(60, k));
+}
+
+// histogram for first displayedPoints samples
+function drawHistogram() {
+  resizeCanvas(histCanvas);
+  const ctx = histCtx;
+  ctx.clearRect(0,0,histCanvas.width,histCanvas.height);
+
+  if (data.length === 0 || displayedPoints === 0) return;
+
+  const N = Math.min(displayedPoints, data.length);
+  const subset = data.slice(0, N);
+
+  const W = histCanvas.width;
+  const H = histCanvas.height;
+
+  const marginLeft = 60;
+  const marginBottom = 40;
+
+  const bins = getBinCount(N);
+  const min = Math.min(...subset);
+  const max = Math.max(...subset);
+  const binSize = (max - min) / bins || 1;
+
+  const counts = new Array(bins).fill(0);
+  subset.forEach(v => {
+    const idx = Math.min(bins-1, Math.floor((v-min)/binSize));
+    counts[idx]++;
+  });
+
+  const maxCount = Math.max(...counts);
+
+  drawAxes(ctx, W, H, 0, maxCount, "Value Range (bins)", "Frequency");
+
+  const effectiveW = W - marginLeft - 20;
+  const effectiveH = H - marginBottom - 20;
+  const barW = effectiveW / bins;
+
+  histogramBars = [];
+
+  ctx.fillStyle = "#4a7bd1";
+  for (let i=0;i<bins;i++) {
+    const h = maxCount > 0 ? (counts[i]/maxCount)*effectiveH : 0;
+    const x = marginLeft + i*barW;
+    const y = H - marginBottom - h;
+
+    ctx.fillRect(x,y,barW-2,h);
+
+    histogramBars.push({
+      x, y, w: barW-2, h,
+      binIndex: i,
+      count: counts[i],
+      minVal: min + i*binSize,
+      maxVal: min + (i+1)*binSize
+    });
+  }
+}
+
+// scatter tooltip
+scatterCanvas.addEventListener("mousemove", e => {
+  const rect = scatterCanvas.getBoundingClientRect();
+  const mx = e.clientX - rect.left;
+  const my = e.clientY - rect.top;
+
+  let found = null;
+
+  for (let p of pointPositions) {
+    const dx = p.x - mx;
+    const dy = p.y - my;
+    if (dx*dx + dy*dy <= p.r*p.r) {
+      found = p;
+      break;
+    }
+  }
+
+  if (found) {
+    tooltip.style.display = "block";
+    tooltip.textContent = `Index ${found.index} | Value ${found.value.toFixed(4)}`;
+    tooltip.style.left = (e.clientX + 12) + "px";
+    tooltip.style.top  = (e.clientY + 12) + "px";
+  } else {
+    tooltip.style.display = "none";
+  }
+});
+
+// histogram tooltip
+histCanvas.addEventListener("mousemove", e => {
+  const rect = histCanvas.getBoundingClientRect();
+  const mx = e.clientX - rect.left;
+  const my = e.clientY - rect.top;
+
+  let found = null;
+
+  for (let b of histogramBars) {
+    if (mx >= b.x && mx <= b.x+b.w && my >= b.y && my <= b.y+b.h) {
+      found = b;
+      break;
+    }
+  }
+
+  if (found) {
+    tooltip.style.display = "block";
+    tooltip.textContent =
+      `Bin ${found.binIndex}
+Value range: [${found.minVal.toFixed(4)}, ${found.maxVal.toFixed(4)}]
+Count: ${found.count}`;
+    tooltip.style.left = (e.clientX + 12) + "px";
+    tooltip.style.top  = (e.clientY + 12) + "px";
+  } else {
+    tooltip.style.display = "none";
+  }
+});
+
+// slider and arrows
+const slider = document.getElementById("displaySlider");
+const leftArrow = document.getElementById("leftArrow");
+const rightArrow = document.getElementById("rightArrow");
+
+let arrowInterval = null;
+const arrowSpeed = 50;
+const arrowStep = 1;
+
+function startArrow(direction) {
+  stopArrow();
+
+  arrowInterval = setInterval(() => {
+    let v = parseInt(slider.value);
+    const max = parseInt(slider.max);
+
+    if (direction === -1 && v > 0) v -= arrowStep;
+    if (direction === 1 && v < max) v += arrowStep;
+
+    slider.value = v;
+    displayedPoints = v;
+    document.getElementById("displayCount").textContent = v;
+    drawScatter();
+    drawHistogram();
+  }, arrowSpeed);
+}
+
+function stopArrow() {
+  if (arrowInterval) clearInterval(arrowInterval);
+  arrowInterval = null;
+}
+
+leftArrow.addEventListener("mousedown", () => startArrow(-1));
+leftArrow.addEventListener("mouseup", stopArrow);
+leftArrow.addEventListener("mouseleave", stopArrow);
+
+rightArrow.addEventListener("mousedown", () => startArrow(1));
+rightArrow.addEventListener("mouseup", stopArrow);
+rightArrow.addEventListener("mouseleave", stopArrow);
+
+slider.addEventListener("input", e => {
+  displayedPoints = parseInt(e.target.value);
+  document.getElementById("displayCount").textContent = displayedPoints;
+  drawScatter();
+  drawHistogram();
+});
+
+// toggles and point size
+const toggleMean = document.getElementById("toggleMean");
+const toggleStd = document.getElementById("toggleStd");
+const pointSizeSlider = document.getElementById("pointSizeSlider");
+const pointSizeLabel = document.getElementById("pointSizeLabel");
+
+toggleMean.addEventListener("change", () => {
+  showMean = toggleMean.checked;
+  drawScatter();
+});
+
+toggleStd.addEventListener("change", () => {
+  showStd = toggleStd.checked;
+  drawScatter();
+});
+
+pointSizeSlider.addEventListener("input", () => {
+  pointSize = parseInt(pointSizeSlider.value);
+  pointSizeLabel.textContent = pointSize;
+  drawScatter();
+});
+
+// init
+categorySel.addEventListener("change", updateDistributionOptions);
+distSel.addEventListener("change", updateParameters);
+updateDistributionOptions();
+</script>
+
+</body>
+</html>

@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Second Term | Confidence & Interval Estimation</title>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
   <style>
     body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; background: #f8fafc; color: #0f172a; }
     header { background: #0f766e; color: #fff; padding: 26px 20px; }
@@ -29,6 +30,19 @@
     <h1>Confidence & Interval Estimation</h1>
     <p>Inferential tools for samples and populations using normal and t-student approaches in Global Economics.</p>
   </header>
+
+  <section style="background:#fff; border-radius:14px; padding:18px 16px; box-shadow:0 8px 20px rgba(0,0,0,0.08); border:1px solid #e2e8f0; margin-bottom:16px;">
+    <h2>Table of Contents</h2>
+    <ul style="margin-left:20px;">
+      <li><a href="#conceptual" style="color:#0ea5e9; text-decoration:none;">Conceptual Referents</a></li>
+      <li><a href="#criteria" style="color:#0ea5e9; text-decoration:none;">Assessment Criteria</a></li>
+      <li><a href="#basics" style="color:#0ea5e9; text-decoration:none;">Interval Basics</a></li>
+      <li><a href="#formulas" style="color:#0ea5e9; text-decoration:none;">Formulas Used in This Topic</a></li>
+      <li><a href="#planning" style="color:#0ea5e9; text-decoration:none;">Planning Samples</a></li>
+      <li><a href="#support" style="color:#0ea5e9; text-decoration:none;">Support Materials</a></li>
+    </ul>
+  </section>
+
 
   <main>
     <section>
@@ -68,6 +82,56 @@
         <li><strong>Known variance:</strong> Use Z-based critical values when population variance is available.</li>
         <li><strong>Unknown variance:</strong> Use t-student with sample standard deviation and degrees of freedom.</li>
       </ul>
+    </section>
+
+    <section>
+      <h2>Formulas Used in This Topic</h2>
+      <div class="example" style="display: grid; gap: 10px;">
+      <p>Before solving the examples, here is a summary of all the statistical formulas that will be used, along with a clear explanation of every variable involved.</p>
+
+      <h3>1. Sample Mean</h3>
+      <p class="math">\[
+        \bar{x} = \frac{1}{n} \sum_{i=1}^{n} x_i
+      \]</p>
+      <p><strong>Meaning of variables:</strong></p>
+      <ul>
+        <li><span class="math">\(x_i\)</span>: each observed data value</li>
+        <li><span class="math">\(n\)</span>: number of observations in the sample</li>
+        <li><span class="math">\(\bar{x}\)</span>: the sample mean</li>
+      </ul>
+
+      <h3>2. Sample Standard Deviation</h3>
+      <p class="math">\[
+        s = \sqrt{\frac{\sum_{i=1}^{n}(x_i - \bar{x})^2}{\,n - 1\,}}
+      \]</p>
+      <p><strong>Meaning of variables:</strong></p>
+      <ul>
+        <li><span class="math">\(x_i\)</span>: each observed data value</li>
+        <li><span class="math">\(\bar{x}\)</span>: the sample mean</li>
+        <li><span class="math">n - 1</span>: degrees of freedom</li>
+        <li><span class="math">s</span>: sample standard deviation, a measure of variability</li>
+      </ul>
+
+      <h3>3. Margin of Error for a Mean (Known or Estimated σ)</h3>
+      <p class="math">\[
+        E = z_{\alpha/2} \cdot \frac{s}{\sqrt{n}}
+      \]</p>
+      <p><strong>Meaning of variables:</strong></p>
+      <ul>
+        <li><span class="math">\(z_{\alpha/2}\)</span>: critical value from the standard normal distribution (e.g., 1.96 for 95% confidence)</li>
+        <li><span class="math">s</span>: sample standard deviation</li>
+        <li><span class="math">n</span>: sample size</li>
+        <li><span class="math">E</span>: margin of error</li>
+      </ul>
+
+      <h3>4. Confidence Interval for a Mean</h3>
+      <p class="math">\[
+        \bar{x} \pm E
+      \]</p>
+      <p><strong>Meaning:</strong> the interval of plausible values for the population mean.</p>
+
+      
+    </div>
     </section>
 
     <section>
