@@ -86,9 +86,10 @@ button:hover { background: #3759a3; }
 
 .arrow-btn {
   background: #888;
-  width: 32px;
+  width: 28px;
   font-weight: bold;
-  padding: 5px 0;
+  padding: 4px 0;
+  font-size: 12px;
 }
 
 .arrow-btn:hover {
@@ -143,6 +144,73 @@ canvas {
 
 .legend-std {
   background: #16a34a;
+}
+
+/* Range slider wrapper for start/end thumbs */
+.range-wrapper {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 8px;
+}
+
+.range-track {
+  position: relative;
+  width: 300px;
+  height: 24px;
+}
+
+/* Overlapped range inputs to simulate two thumbs */
+.range-track input[type="range"] {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  pointer-events: none; /* track doesn't catch events */
+  -webkit-appearance: none;
+}
+
+/* Track (Chrome) */
+.range-track input[type="range"]::-webkit-slider-runnable-track {
+  height: 4px;
+  background: #d1d5db;
+  border-radius: 4px;
+}
+
+/* Thumb (Chrome) */
+.range-track input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #4b5563;
+  border: 2px solid #ffffff;
+  margin-top: -5px; /* center thumb on track */
+  pointer-events: auto; /* thumbs catch events */
+}
+
+/* Firefox fallback (simpler; may not fully overlay cleanly but works) */
+.range-track input[type="range"]::-moz-range-track {
+  height: 4px;
+  background: #d1d5db;
+  border-radius: 4px;
+}
+.range-track input[type="range"]::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #4b5563;
+  border: 2px solid #ffffff;
+}
+
+/* Label for selected range */
+#displayRangeLabel {
+  margin-left: 8px;
+  font-size: 12px;
+  color: #374151;
 }
 </style>
 
@@ -202,17 +270,24 @@ window.MathJax = {
     <button onclick="generate(1000000)">1,000,000</button>
   </div>
 
-  <!-- Slider with arrow buttons -->
+  <!-- Range slider with four fine-tune buttons -->
   <div class="param-row" id="sliderContainer" style="display:none;">
     Points to display
+    <div class="range-wrapper">
+      <!-- Start index buttons -->
+      <button id="startDec" class="arrow-btn">-</button>
+      <button id="startInc" class="arrow-btn">+</button>
 
-    <button id="leftArrow" class="arrow-btn">◀</button>
+      <div class="range-track">
+        <input id="startSlider" type="range" min="0" value="0">
+        <input id="endSlider" type="range" min="0" value="0">
+      </div>
 
-    <input id="displaySlider" type="range" min="0" value="0" style="width:300px;">
-
-    <button id="rightArrow" class="arrow-btn">▶</button>
-
-    <span id="displayCount"></span>
+      <!-- End index buttons -->
+      <button id="endDec" class="arrow-btn">-</button>
+      <button id="endInc" class="arrow-btn">+</button>
+    </div>
+    <span id="displayRangeLabel"></span>
   </div>
 
   <!-- Point size slider -->
@@ -271,23 +346,25 @@ const discrete = ["Bernoulli", "Binomial", "Geometric", "Poisson"];
 const continuous = ["Uniform", "Normal", "Exponential", "Gamma"];
 
 let data = [];
-let displayedPoints = 0;
-
 let histogramBars = [];
 let pointPositions = [];
 
-// which bin is hovered: {min, max} or null
+// hovered histogram bin -> highlighted band in scatter
 let hoveredBinRange = null;
 
-// toggles and point size
+// running-line toggles and point size
 let showMean = true;
 let showStd = true;
 let pointSize = 3;
 
 // CI and true average line toggles
 let showCI = false;
-let showOverallMean = false;  // "True average line"
+let showOverallMean = false;
 let ciLevel = 95; // percent
+
+// range selection (indices)
+let rangeStart = 0;
+let rangeEnd = 0;
 
 const scatterCanvas = document.getElementById("scatterCanvas");
 const scatterCtx = scatterCanvas.getContext("2d");
@@ -302,7 +379,16 @@ const pdfCanvas = document.getElementById("pdfCanvas");
 const pdfCtx = pdfCanvas.getContext("2d");
 const equationBoxEl = document.getElementById("equationBox");
 
-// Distribution equations in TeX (rendered by MathJax)
+// Range slider controls
+const startSlider = document.getElementById("startSlider");
+const endSlider = document.getElementById("endSlider");
+const displayRangeLabel = document.getElementById("displayRangeLabel");
+const startDecBtn = document.getElementById("startDec");
+const startIncBtn = document.getElementById("startInc");
+const endDecBtn = document.getElementById("endDec");
+const endIncBtn = document.getElementById("endInc");
+
+// Distribution equations in TeX for MathJax
 const distributionEquations = {
   Bernoulli:
     "\\(\\text{Bernoulli}(p)\\)<br>" +
@@ -429,7 +515,7 @@ function getTrueMean() {
     if (!isFinite(nBin) || !isFinite(p)) return null;
     return nBin * p;
   }
-  if (dist === "Geometric") { // support starting at 1
+  if (dist === "Geometric") {
     if (!isFinite(p) || p <= 0) return null;
     return 1 / p;
   }
@@ -484,7 +570,7 @@ function gammaFn(z) {
   }
 }
 
-// Draw small PDF/PMF graph for current distribution and parameters (with ticks)
+// Draw small PDF/PMF graph
 function drawPDF() {
   resizeCanvas(pdfCanvas);
   const ctx = pdfCtx;
@@ -505,7 +591,6 @@ function drawPDF() {
   const effH = H - marginBottom - topMargin;
   if (effW <= 0 || effH <= 0) return;
 
-  // Read parameters (may be NaN if not present)
   const p = parseFloat(document.getElementById("p")?.value);
   const nBin = parseInt(document.getElementById("n")?.value);
   const a = parseFloat(document.getElementById("a")?.value);
@@ -521,7 +606,6 @@ function drawPDF() {
   let xs = [];
   let ys = [];
 
-  // Build xs, ys
   try {
     if (dist === "Bernoulli") {
       if (!(p >= 0 && p <= 1)) throw new Error();
@@ -695,7 +779,7 @@ function drawPDF() {
   }
 }
 
-// generate data
+// Generate data
 function generate(n) {
   const dist = distSel.value;
 
@@ -708,6 +792,10 @@ function generate(n) {
   const lambda = parseFloat(document.getElementById("lambda")?.value);
   const kshape = parseFloat(document.getElementById("k")?.value);
   const theta = parseFloat(document.getElementById("theta")?.value);
+
+  const oldLen = data.length;
+  const oldStart = rangeStart;
+  const oldEnd = rangeEnd;
 
   data = [];
 
@@ -734,22 +822,32 @@ function generate(n) {
     }
   }
 
-  const slider = document.getElementById("displaySlider");
+  const total = data.length;
+  const maxIndex = total > 0 ? total - 1 : 0;
 
-  let previousDisplay = displayedPoints || parseInt(slider.value) || 0;
+  startSlider.min = 0;
+  startSlider.max = maxIndex;
+  endSlider.min = 0;
+  endSlider.max = maxIndex;
 
-  slider.max = n;
-
-  if (previousDisplay > 0) {
-    const newDisplay = Math.min(previousDisplay, n);
-    slider.value = newDisplay;
-    displayedPoints = newDisplay;
+  if (oldLen > 0) {
+    const denom = (oldLen - 1) || 1;
+    let newStart = Math.round(oldStart / denom * maxIndex);
+    let newEnd   = Math.round(oldEnd   / denom * maxIndex);
+    if (newStart < 0) newStart = 0;
+    if (newStart > maxIndex) newStart = maxIndex;
+    if (newEnd < newStart) newEnd = newStart;
+    if (newEnd > maxIndex) newEnd = maxIndex;
+    rangeStart = newStart;
+    rangeEnd = newEnd;
   } else {
-    slider.value = n;
-    displayedPoints = n;
+    rangeStart = 0;
+    rangeEnd   = maxIndex;
   }
 
-  document.getElementById("displayCount").textContent = displayedPoints;
+  startSlider.value = rangeStart;
+  endSlider.value   = rangeEnd;
+
   document.getElementById("sliderContainer").style.display = "block";
   document.getElementById("linesToggleRow").style.display = "block";
   document.getElementById("pointSizeRow").style.display = "block";
@@ -758,11 +856,12 @@ function generate(n) {
   const ciSliderRow = document.getElementById("ciSliderRow");
   ciSliderRow.style.display = showCI ? "block" : "none";
 
+  updateRangeLabel();
   drawScatter();
   drawHistogram();
 }
 
-// axes for main graphs
+// Axes
 function drawAxes(ctx, W, H, minY, maxY, xLabel, yLabel) {
   const marginLeft = 60;
   const marginBottom = 40;
@@ -807,11 +906,9 @@ function drawAxes(ctx, W, H, minY, maxY, xLabel, yLabel) {
   }
 }
 
-// Normal inverse CDF (Acklam approximation)
+// Normal inverse CDF
 function normInv(p) {
-  if (p <= 0 || p >= 1) {
-    throw new Error("p must be in (0,1)");
-  }
+  if (p <= 0 || p >= 1) throw new Error("p must be in (0,1)");
 
   const a = [
     -3.969683028665376e+01,
@@ -866,7 +963,6 @@ function normInv(p) {
   }
 }
 
-// For a two-sided confidence level in percent, return z
 function getZ(confPercent) {
   const c = confPercent / 100;
   const alpha = 1 - c;
@@ -874,7 +970,7 @@ function getZ(confPercent) {
   return normInv(p);
 }
 
-// helper to draw static label boxes (always-visible tooltips)
+// Static label on canvas
 function drawLabel(ctx, x, y, text, W, H) {
   ctx.save();
   ctx.font = "11px Arial";
@@ -905,13 +1001,36 @@ function drawLabel(ctx, x, y, text, W, H) {
   ctx.restore();
 }
 
-// scatter + running stats
+// Update displayed range label
+function updateRangeLabel() {
+  const total = data.length;
+  if (!total) {
+    displayRangeLabel.textContent = "";
+    return;
+  }
+  let start = Math.max(0, Math.min(rangeStart, total - 1));
+  let end   = Math.max(0, Math.min(rangeEnd, total - 1));
+  if (end < start) [start, end] = [end, start];
+  const count = end - start + 1;
+  displayRangeLabel.textContent =
+    `Start: ${start}  End: ${end}  (count: ${count})`;
+}
+
+// Scatter plot with running stats, CI, true mean, and range
 function drawScatter() {
   resizeCanvas(scatterCanvas);
   const ctx = scatterCtx;
   ctx.clearRect(0,0,scatterCanvas.width,scatterCanvas.height);
 
-  if (displayedPoints === 0 || data.length === 0) return;
+  const total = data.length;
+  if (total === 0) return;
+
+  let start = Math.max(0, Math.min(rangeStart, total - 1));
+  let end   = Math.max(0, Math.min(rangeEnd, total - 1));
+  if (end < start) [start, end] = [end, start];
+
+  const N = end - start + 1;
+  if (N <= 0) return;
 
   const W = scatterCanvas.width;
   const H = scatterCanvas.height;
@@ -919,8 +1038,6 @@ function drawScatter() {
   const marginLeft = 60;
   const marginBottom = 40;
   const topMargin = 20;
-
-  const N = Math.min(displayedPoints, data.length);
 
   const runningMean = new Array(N);
   const runningStd = new Array(N);
@@ -930,8 +1047,10 @@ function drawScatter() {
   let minY = Infinity;
   let maxY = -Infinity;
 
+  // compute running stats over selected range
   for (let i = 0; i < N; i++) {
-    const v = data[i];
+    const idx = start + i;
+    const v = data[idx];
     sum += v;
     sumSq += v * v;
     const n = i + 1;
@@ -977,9 +1096,7 @@ function drawScatter() {
     let distBelow = trueMean - minY;
     let distAbove = maxY - trueMean;
     let maxDist = Math.max(distBelow, distAbove);
-    if (!(maxDist > 0)) {
-      maxDist = 1;
-    }
+    if (!(maxDist > 0)) maxDist = 1;
     minY = trueMean - maxDist;
     maxY = trueMean + maxDist;
   }
@@ -999,6 +1116,7 @@ function drawScatter() {
 
   pointPositions = [];
 
+  // Highlight band for hovered histogram bin
   if (hoveredBinRange && isFinite(hoveredBinRange.min) && isFinite(hoveredBinRange.max)) {
     const y1 = valueToY(hoveredBinRange.max);
     const y2 = valueToY(hoveredBinRange.min);
@@ -1032,17 +1150,20 @@ function drawScatter() {
   const hoverRadius = Math.max(5, pointSize);
   ctx.fillStyle = "#222";
 
+  // Points in selected range
   for (let i = 0; i < N; i++) {
+    const globalIndex = start + i;
     const x = N > 1
       ? marginLeft + (i / (N - 1)) * effectiveW
       : marginLeft + effectiveW / 2;
-    const y = valueToY(data[i]);
+    const y = valueToY(data[globalIndex]);
 
     ctx.fillRect(x - pointSize / 2, y - pointSize / 2, pointSize, pointSize);
 
-    pointPositions.push({ x, y, index: i, value: data[i], r: hoverRadius });
+    pointPositions.push({ x, y, index: globalIndex, value: data[globalIndex], r: hoverRadius });
   }
 
+  // Running mean line
   if (showMean) {
     ctx.strokeStyle = "#2563eb";
     ctx.lineWidth = 2;
@@ -1058,11 +1179,11 @@ function drawScatter() {
     ctx.stroke();
 
     if (N > 0) {
-      const lastIndex = N - 1;
+      const lastIndexLocal = N - 1;
       const xLastMean = N > 1
-        ? marginLeft + (lastIndex / (N - 1)) * effectiveW
+        ? marginLeft + (lastIndexLocal / (N - 1)) * effectiveW
         : marginLeft + effectiveW / 2;
-      const yLastMean = valueToY(runningMean[lastIndex]);
+      const yLastMean = valueToY(runningMean[lastIndexLocal]);
 
       ctx.beginPath();
       ctx.arc(xLastMean, yLastMean, 7, 0, 2 * Math.PI);
@@ -1072,11 +1193,12 @@ function drawScatter() {
       ctx.strokeStyle = "#ffffff";
       ctx.stroke();
 
-      const labelText = "Mean: " + runningMean[lastIndex].toFixed(3);
+      const labelText = "Mean: " + runningMean[lastIndexLocal].toFixed(3);
       drawLabel(ctx, xLastMean + 10, yLastMean - 12, labelText, W, H);
     }
   }
 
+  // Running std line
   if (showStd) {
     ctx.strokeStyle = "#16a34a";
     ctx.lineWidth = 2;
@@ -1092,11 +1214,11 @@ function drawScatter() {
     ctx.stroke();
 
     if (N > 0) {
-      const lastIndex = N - 1;
+      const lastIndexLocal = N - 1;
       const xLastStd = N > 1
-        ? marginLeft + (lastIndex / (N - 1)) * effectiveW
+        ? marginLeft + (lastIndexLocal / (N - 1)) * effectiveW
         : marginLeft + effectiveW / 2;
-      const yLastStd = valueToY(runningStd[lastIndex]);
+      const yLastStd = valueToY(runningStd[lastIndexLocal]);
 
       ctx.beginPath();
       ctx.arc(xLastStd, yLastStd, 7, 0, 2 * Math.PI);
@@ -1106,11 +1228,12 @@ function drawScatter() {
       ctx.strokeStyle = "#ffffff";
       ctx.stroke();
 
-      const labelText = "Std: " + runningStd[lastIndex].toFixed(3);
+      const labelText = "Std: " + runningStd[lastIndexLocal].toFixed(3);
       drawLabel(ctx, xLastStd + 10, yLastStd + 12, labelText, W, H);
     }
   }
 
+  // True average line
   if (showOverallMean && trueMean != null && isFinite(trueMean)) {
     const yTrue = valueToY(trueMean);
     ctx.strokeStyle = "#f97316";
@@ -1127,6 +1250,7 @@ function drawScatter() {
     drawLabel(ctx, xLabel, yTrue, labelText, W, H);
   }
 
+  // CI labels
   if (showCI && N > 1 && ciLower != null && ciUpper != null) {
     const labelLow = "CI low: " + ciLower.toFixed(3);
     const labelHigh = "CI high: " + ciUpper.toFixed(3);
@@ -1140,23 +1264,30 @@ function drawScatter() {
   }
 }
 
-// decision rule for bins: sqrt(n) clamped to [5, 60]
+// decision rule for bins: sqrt(n) clamped
 function getBinCount(n) {
   if (n <= 1) return 1;
   const k = Math.round(Math.sqrt(n));
   return Math.max(5, Math.min(60, k));
 }
 
-// histogram for first displayedPoints samples
+// Histogram over selected range
 function drawHistogram() {
   resizeCanvas(histCanvas);
   const ctx = histCtx;
   ctx.clearRect(0,0,histCanvas.width,histCanvas.height);
 
-  if (data.length === 0 || displayedPoints === 0) return;
+  const total = data.length;
+  if (total === 0) return;
 
-  const N = Math.min(displayedPoints, data.length);
-  const subset = data.slice(0, N);
+  let start = Math.max(0, Math.min(rangeStart, total - 1));
+  let end   = Math.max(0, Math.min(rangeEnd, total - 1));
+  if (end < start) [start, end] = [end, start];
+
+  const N = end - start + 1;
+  if (N <= 0) return;
+
+  const subset = data.slice(start, end + 1);
 
   const W = histCanvas.width;
   const H = histCanvas.height;
@@ -1203,7 +1334,7 @@ function drawHistogram() {
   }
 }
 
-// scatter hover tooltip
+// Scatter hover tooltip
 scatterCanvas.addEventListener("mousemove", e => {
   const rect = scatterCanvas.getBoundingClientRect();
   const mx = e.clientX - rect.left;
@@ -1230,7 +1361,7 @@ scatterCanvas.addEventListener("mousemove", e => {
   }
 });
 
-// histogram hover tooltip + linking band
+// Histogram hover tooltip + linking band
 histCanvas.addEventListener("mousemove", e => {
   const rect = histCanvas.getBoundingClientRect();
   const mx = e.clientX - rect.left;
@@ -1271,54 +1402,71 @@ histCanvas.addEventListener("mouseleave", () => {
   drawScatter();
 });
 
-// slider and arrows
-const slider = document.getElementById("displaySlider");
-const leftArrow = document.getElementById("leftArrow");
-const rightArrow = document.getElementById("rightArrow");
-
-let arrowInterval = null;
-const arrowSpeed = 50;
-const arrowStep = 1;
-
-function startArrow(direction) {
-  stopArrow();
-
-  arrowInterval = setInterval(() => {
-    let v = parseInt(slider.value);
-    const max = parseInt(slider.max);
-
-    if (direction === -1 && v > 0) v -= arrowStep;
-    if (direction === 1 && v < max) v += arrowStep;
-
-    slider.value = v;
-    displayedPoints = v;
-    document.getElementById("displayCount").textContent = v;
-    drawScatter();
-    drawHistogram();
-  }, arrowSpeed);
-}
-
-function stopArrow() {
-  if (arrowInterval) clearInterval(arrowInterval);
-  arrowInterval = null;
-}
-
-leftArrow.addEventListener("mousedown", () => startArrow(-1));
-leftArrow.addEventListener("mouseup", stopArrow);
-leftArrow.addEventListener("mouseleave", stopArrow);
-
-rightArrow.addEventListener("mousedown", () => startArrow(1));
-rightArrow.addEventListener("mouseup", stopArrow);
-rightArrow.addEventListener("mouseleave", stopArrow);
-
-slider.addEventListener("input", e => {
-  displayedPoints = parseInt(e.target.value);
-  document.getElementById("displayCount").textContent = displayedPoints;
+// Range sliders + fine-tune buttons
+startSlider.addEventListener("input", () => {
+  const total = data.length;
+  if (!total) return;
+  let val = parseInt(startSlider.value);
+  const maxIndex = total - 1;
+  if (val < 0) val = 0;
+  if (val > rangeEnd) val = rangeEnd;
+  if (val > maxIndex) val = maxIndex;
+  rangeStart = val;
+  startSlider.value = val;
+  updateRangeLabel();
   drawScatter();
   drawHistogram();
 });
 
-// toggles and sliders
+endSlider.addEventListener("input", () => {
+  const total = data.length;
+  if (!total) return;
+  let val = parseInt(endSlider.value);
+  const maxIndex = total - 1;
+  if (val < rangeStart) val = rangeStart;
+  if (val > maxIndex) val = maxIndex;
+  rangeEnd = val;
+  endSlider.value = val;
+  updateRangeLabel();
+  drawScatter();
+  drawHistogram();
+});
+
+function adjustStart(delta) {
+  const total = data.length;
+  if (!total) return;
+  const maxIndex = total - 1;
+  let val = rangeStart + delta;
+  if (val < 0) val = 0;
+  if (val > rangeEnd) val = rangeEnd;
+  if (val > maxIndex) val = maxIndex;
+  rangeStart = val;
+  startSlider.value = val;
+  updateRangeLabel();
+  drawScatter();
+  drawHistogram();
+}
+
+function adjustEnd(delta) {
+  const total = data.length;
+  if (!total) return;
+  const maxIndex = total - 1;
+  let val = rangeEnd + delta;
+  if (val < rangeStart) val = rangeStart;
+  if (val > maxIndex) val = maxIndex;
+  rangeEnd = val;
+  endSlider.value = val;
+  updateRangeLabel();
+  drawScatter();
+  drawHistogram();
+}
+
+startDecBtn.addEventListener("click", () => adjustStart(-1));
+startIncBtn.addEventListener("click", () => adjustStart(+1));
+endDecBtn.addEventListener("click", () => adjustEnd(-1));
+endIncBtn.addEventListener("click", () => adjustEnd(+1));
+
+// Toggles and sliders
 const toggleMean = document.getElementById("toggleMean");
 const toggleStd = document.getElementById("toggleStd");
 const pointSizeSlider = document.getElementById("pointSizeSlider");
